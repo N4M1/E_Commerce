@@ -1,6 +1,55 @@
 <?php
+session_start();
+
+$url = $_SERVER['REQUEST_URI'];
+
+if(!str_contains($url, "/templates/register.php") && !str_contains($url, "/templates/login.php"))
+{
+    if (empty($_SESSION['logged_in']))
+    {
+        header('Location: login.php');
+    }
+
+    $tokenId = session_id();
+
+    $bdd = new PDO("mysql:host=localhost;dbname=straplands;charset=utf8", 'root', '');
+    $bdd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $sth = $bdd->prepare('SELECT *
+        FROM token
+        WHERE id_token = :tokenId');
+
+    $sth->bindValue(':tokenId', $tokenId, PDO::PARAM_STR);
+    $sth->execute();
+
+    $token = $sth->fetchAll();
+
+    if (empty($token)) {
+        session_destroy();
+        header('Location: login.php');
+    }
+
+    $id = $token[0]['id_user'];
+
+    $sth = $bdd->prepare('SELECT *
+        FROM users
+        WHERE id_user = :userId');
+
+    $sth->bindValue(':userId', $id, PDO::PARAM_STR);
+    $sth->execute();
+
+    $users = $sth->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($users)) {
+        session_destroy();
+        header('Location: login.php');
+    }
+
+    $user = $users[0];
+}
 
 ?>
+
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/html">
 
@@ -8,7 +57,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>StrapLands - <?= $pageTitle="" ?></title>
+    <title><?= $pageTitle="Straplands - " ?></title>
     <link rel="icon" type="image/png" sizes="16x16" href="../templates/img/logo_icon_16x16.png">
     <link href="../templates/style.css" rel="stylesheet" type="text/css">
 
@@ -34,30 +83,56 @@
             <!-- Links Responsive -->
 
             <div class="border-t border-gray-200 py-6 px-4 space-y-6">
+                <?php
 
-                <div class="flow-root">
-                    <a href="/templates/accueil.php" class="-m-2 p-2 block font-medium text-gray-900">Accueil</a>
-                </div>
-
-                <div class="flow-root">
-                    <a href="/templates/bracelets.php" class="-m-2 p-2 block font-medium text-gray-900">Nos Bracelets</a>
-                </div>
-
-                <div class="flow-root">
-                    <a href="#" class="-m-2 p-2 block font-medium text-gray-900">Nos Accessoires</a>
-                </div>
-
-                <div class="flow-root">
-                    <a href="#" class="-m-2 p-2 block font-medium text-gray-900">FAQ</a>
-                </div>
+                if(!empty($user))
+                {
+                    echo'
+                    <div class="flow-root" >
+                        <a href = "/templates/accueil.php" class="-m-2 p-2 block font-medium text-gray-900" > Accueil</a >
+                    </div >
+    
+                    <div class="flow-root " >
+                        <a href = "/templates/bracelets.php" class="-m-2 p-2 block font-medium text-gray-900" > Nos Bracelets </a >
+                    </div >
+    
+                    <div class="flow-root" >
+                        <a href = "#" class="-m-2 p-2 block font-medium text-gray-900" > Nos Accessoires </a >
+                    </div >
+    
+                    <div class="flow-root" >
+                        <a href = "#" class="-m-2 p-2 block font-medium text-gray-900" > FAQ</a >
+                    </div >';
+                }
+                ?>
             </div>
 
             <div class="border-t border-gray-200 py-6 px-4 space-y-6">
                 <div class="flow-root">
-                    <a href="#" class="-m-2 p-2 block font-medium text-gray-900">Se connecter</a>
+                    <a href="../templates/<?php if(empty($user)) {echo "login.php";} else{echo "accueil.php";} ?>" class="-m-2 p-2 block font-medium text-gray-900">
+                        <?php
+                        if(empty($user))
+                        {
+                            echo "Se connecter";
+                        }
+                        else{
+                            echo "Bonjour, ".$user['username'];
+                        }
+                        ?>
+                    </a>
                 </div>
                 <div class="flow-root">
-                    <a href="#" class="-m-2 p-2 block font-medium text-gray-900">S'enregistrer</a>
+                    <a href="../templates/<?php if(empty($user)) {echo "register.php";} else{echo "logout.php";} ?>" class="-m-2 p-2 block font-medium text-gray-900"> <?php
+
+                                                if(empty($user))
+                                                {
+                                                echo "S'inscrire";
+                                                }
+                                                else{
+                                                echo "Se déconnecter";
+                                                }
+                                                ?>
+                    </a>
                 </div>
             </div>
         </div>
@@ -86,6 +161,11 @@
                 </div>
 
                 <div class="hidden lg:ml-8 lg:block lg:self-stretch">
+                <?php
+
+                if(!empty($user))
+                {
+                    echo'
                     <div class="h-full flex space-x-8">
                         <div class="flex">
                             <div class="relative flex">
@@ -110,14 +190,37 @@
                         <a href="#" class="flex items-center text-sm font-medium text-gray-700 hover:text-gray-800">Nos Accessoires</a>
 
                         <a href="#" class="flex items-center text-sm font-medium text-gray-700 hover:text-gray-800">FAQ</a>
-                    </div>
+                    </div>';
+                }
+                ?>
                 </div>
 
                 <div class="ml-auto flex items-center">
                     <div class="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
-                        <a href="#" class="text-sm font-medium text-gray-700 hover:text-gray-800">Se connecter</a>
+                        <a href="../templates/<?php if(empty($user)) {echo "login.php";} else{echo "accueil.php";} ?>" class="text-sm font-medium text-gray-700 hover:text-gray-800">
+                            <?php
+                            if(empty($user))
+                            {
+                                echo "Se connecter";
+                            }
+                            else{
+                                echo "Bonjour, ".$user['username'];
+                            }
+                            ?>
+                        </a>
                         <span class="h-6 w-px bg-gray-200" aria-hidden="true"></span>
-                        <a href="#" class="text-sm font-medium text-gray-700 hover:text-gray-800">S'enregister</a>
+                        <a href="../templates/<?php if(empty($user)) {echo "register.php";} else{echo "logout.php";} ?>"
+                           class="text-sm font-medium text-gray-700 hover:text-gray-800">
+                            <?php
+                            if(empty($user))
+                            {
+                                echo "S'inscrire";
+                            }
+                            else{
+                                echo "Se déconnecter";
+                            }
+                            ?>
+                        </a>
                     </div>
                     <div class="ml-4 flow-root lg:ml-6">
                         <a href="../templates/cart.php" class="group -m-2 p-2 flex items-center">
@@ -166,6 +269,3 @@
     document.getElementById("open").addEventListener("click", open);
 
 </script>
-</body>
-</html>
-

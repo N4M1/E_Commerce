@@ -5,5 +5,6 @@ module.exports = {
   },
   plugins: [
       require('@tailwindcss/aspect-radio'),
+      require('@tailwindcss/typography'),
   ],
 }
